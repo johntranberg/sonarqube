@@ -1,0 +1,6 @@
+{
+    "sonar": {
+        "host": "http://localhost:9000",
+        "token": "your-token-here"
+    }
+}
