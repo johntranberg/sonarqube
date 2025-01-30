@@ -42,6 +42,62 @@ done
 # Wait a bit more for full initialization
 sleep 30
 
+# Check for Java project and compiled classes
+JAVA_FILES=$(find "$TARGET_DIR" -name "*.java" -type f)
+ADDITIONAL_ARGS=""
+
+if [ ! -z "$JAVA_FILES" ]; then
+    echo "Java files detected, looking for compiled classes..."
+    
+    # Common build directories for Java projects
+    POSSIBLE_BUILD_DIRS=(
+        "target/classes"
+        "build/classes"
+        "out/production"
+        "bin"
+    )
+    
+    for BUILD_DIR in "${POSSIBLE_BUILD_DIRS[@]}"; do
+        if [ -d "$TARGET_DIR/$BUILD_DIR" ]; then
+            echo "Found compiled classes in $BUILD_DIR"
+            ADDITIONAL_ARGS="$ADDITIONAL_ARGS -Dsonar.java.binaries=/usr/src/$BUILD_DIR"
+            break
+        fi
+    done
+    
+    if [ -z "$ADDITIONAL_ARGS" ]; then
+        echo "Warning: Java files found but no compiled classes detected."
+        echo "Please compile your Java project before running the analysis,"
+        echo "or use -Dsonar.java.binaries to specify the location of compiled classes,"
+        echo "or use -Dsonar.exclusions to exclude Java files from analysis."
+        echo ""
+        echo "Common build commands:"
+        echo "Maven: mvn compile"
+        echo "Gradle: ./gradlew classes"
+        echo ""
+        read -p "Do you want to continue without Java analysis? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+        ADDITIONAL_ARGS="-Dsonar.exclusions=**/*.java"
+    fi
+fi
+
+# Detect Git branch if in a Git repository
+if [ -d "$TARGET_DIR/.git" ] || git -C "$TARGET_DIR" rev-parse --git-dir > /dev/null 2>&1; then
+    BRANCH_NAME=$(git -C "$TARGET_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [ ! -z "$BRANCH_NAME" ]; then
+        echo "Note: Branch analysis (sonar.branch.name) is only available in SonarQube Developer Edition or higher."
+        echo "      The analysis will proceed without branch information in Community Edition."
+        echo "      Current branch: $BRANCH_NAME"
+        # Only add branch parameter if explicitly requested
+        if [ "$SONAR_BRANCH_ANALYSIS" = "true" ]; then
+            ADDITIONAL_ARGS="$ADDITIONAL_ARGS -Dsonar.branch.name=$BRANCH_NAME"
+        fi
+    fi
+fi
+
 # Run analysis
 echo "Running analysis on $TARGET_DIR..."
 docker run --rm \
@@ -51,6 +107,7 @@ docker run --rm \
     -Dsonar.projectKey=$PROJECT_NAME \
     -Dsonar.sources=/usr/src \
     -Dsonar.host.url=$SONAR_HOST \
-    -Dsonar.token=$SONAR_TOKEN
+    -Dsonar.token=$SONAR_TOKEN \
+    $ADDITIONAL_ARGS
 
 echo "Analysis complete. Visit $SONAR_HOST to view results."
