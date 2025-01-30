@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Get the project root directory
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
     echo "Error: Docker is not installed. Please install Docker first."
@@ -44,15 +47,22 @@ docker pull sonarsource/sonar-scanner-cli:latest
 
 # Create necessary directories
 echo "Creating necessary directories..."
-mkdir -p .scannerwork
+mkdir -p "$PROJECT_ROOT/.scannerwork"
 
-# Make run script executable
-echo "Making run script executable..."
-chmod +x run-analysis.sh
+# Make scripts executable
+echo "Making scripts executable..."
+chmod +x "$PROJECT_ROOT/bin"/*.sh
 
-echo "Setup complete! You can now run './run-analysis.sh <target_directory>' to analyze your code."
+# Check if config file exists
+if [ ! -f "$PROJECT_ROOT/config/sonar-config.json" ]; then
+    echo "Creating sonar-config.json from example..."
+    cp "$PROJECT_ROOT/config/sonar-config.example.json" "$PROJECT_ROOT/config/sonar-config.json"
+fi
+
+echo "Setup complete! You can now run './bin/run-analysis.sh <target_directory>' to analyze your code."
 echo "Note: On first run, you'll need to:"
 echo "1. Wait for SonarQube to fully initialize (this may take a few minutes)"
 echo "2. Visit http://localhost:9000"
 echo "3. Login with default credentials (admin/admin)"
 echo "4. Change the password when prompted"
+echo "5. Create a token in SonarQube: http://localhost:9000/account/security/ and update it in config/sonar-config.json"

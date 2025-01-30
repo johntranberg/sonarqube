@@ -2,12 +2,15 @@
 
 # Check if target directory is provided
 if [ -z "$1" ]; then
-    echo "Usage: ./run-analysis.sh <target_directory>"
+    echo "Usage: ./bin/run-analysis.sh <target_directory>"
     exit 1
 fi
 
+# Get the project root directory
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 # Read configuration
-CONFIG_FILE="$(dirname "$0")/sonar-config.json"
+CONFIG_FILE="$PROJECT_ROOT/config/sonar-config.json"
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Error: Configuration file not found at $CONFIG_FILE"
     exit 1
@@ -18,7 +21,7 @@ SONAR_HOST=$(jq -r '.sonar.host' "$CONFIG_FILE")
 SONAR_TOKEN=$(jq -r '.sonar.token' "$CONFIG_FILE")
 
 if [ "$SONAR_TOKEN" = "YOUR_SONAR_TOKEN" ]; then
-    echo "Error: Please update the token in sonar-config.json"
+    echo "Error: Please update the token in config/sonar-config.json"
     echo "You can generate a token in SonarQube: $SONAR_HOST/account/security/"
     exit 1
 fi
@@ -28,7 +31,7 @@ PROJECT_NAME=$(basename "$TARGET_DIR")
 
 # Start SonarQube
 echo "Starting SonarQube..."
-docker compose up -d sonarqube
+docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d sonarqube
 
 # Wait for SonarQube to be ready
 echo "Waiting for SonarQube to be ready..."

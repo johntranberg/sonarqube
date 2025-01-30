@@ -1,1 +1,15 @@
-sonar-config.json
+# Configuration
+config/sonar-config.json
+config/.env
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+
+# SonarQube
+.scannerwork/
+
+# IDE
+.idea/
+.vscode/
