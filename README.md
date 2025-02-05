@@ -65,10 +65,10 @@ cp config/.env.example config/.env
 6. Run AI analysis on the results (optional):
 ```bash
 # Install Python dependencies
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 # Run AI analysis
-python src/analyze_with_ai.py
+python3 src/analyze_with_ai.py
 ```
 
 ## First-Time Setup
